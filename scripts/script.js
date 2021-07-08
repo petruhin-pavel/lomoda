@@ -3,7 +3,6 @@ const headerCityButton = document.querySelector('.header__city-button');
 //определяем хеш страниц #men #women #kids
 let hash = location.hash.substring(1); //substring обрезает значения substring(1) обрезает 1 символ
 
-
 /* if (localStorage.getItem('lomoda-location')) {
   headerCityButton.textContent = localStorage.getItem('lomoda-location');
 } */
@@ -17,7 +16,6 @@ headerCityButton.addEventListener('click', () => {
 });
 
 //Блокиовка скролла
-
 const disableScroll = () => {
   const widthScroll = window.innerWidth - document.body.offsetWidth;
   document.body.dbScrollY = window.scrollY;
@@ -41,7 +39,6 @@ const enableScroll = () => {
 
 
 //Модальное окно
-
 const subheaderCart = document.querySelector('.subheader__cart');
 const cartOverlay = document.querySelector('.cart-overlay');
 
@@ -59,11 +56,9 @@ subheaderCart.addEventListener('click', cartModalOpen);
 
 cartOverlay.addEventListener('click', event => {
   const target = event.target;
-
   /* if (target.classList.contains('cart__btn-close')) {
     cartModalClose();
   } */
-
   if (target.matches('.cart__btn-close') || target.matches('.cart-overlay')) {
     cartModalClose();
   }
@@ -71,14 +66,16 @@ cartOverlay.addEventListener('click', event => {
 });
 
 document.addEventListener('keyup', event => {
+
   if (event.key === 'Escape') {
     cartModalClose();
   };
+
 });
 
 //Запрос базы данных
-
 const getData = async () => { //async - асинхронный оператор
+
   const data = await fetch('db.json');
 
   if (data.ok) {
@@ -86,13 +83,14 @@ const getData = async () => { //async - асинхронный оператор
   } else {
     throw new Error(`Данные небыли получены, ошибка ${data.status} ${data.statusText}`)
   }
+
 };
 
-const getGoods = (callback, value) => {
+const getGoods = (callback, prop, value) => {
   getData()
     .then(data => {
       if (value) {
-        callback(data.filter(item => item.category === value))
+        callback(data.filter(item => item[prop] === value))
       } else {
         callback(data); //на всякий случай
       }
@@ -101,25 +99,29 @@ const getGoods = (callback, value) => {
       console.error(err)
     });
 }
-
 /* getGoods((data) => {
   console.warn(data)
 }) */
-
-//данная структура позоволяет работать скрипту на определенных страницах
+// try/catch данная структура позоволяет работать скрипту на определенных страницах. Работает по принципу обнаружения уникального элемента на странице
+//страница товаров (категорий)
 try {
+
   const goodsList = document.querySelector('.goods__list');
 
   if (!goodsList) {
     throw 'This is not a goods page!'
   }
 
+  const goodsTitle = document.querySelector('.goods__title');
+
+  const changeTitle = () => {
+    goodsTitle.textContent = document.querySelector(`[href*="#${hash}"]`).textContent;
+  }
+
   //const createCard = data => { относится к методу "деструктуризация"
   const createCard = ({ id, preview, cost, brand, name, sizes }) => { //так еще проще
-
     //новый метод "деструктуризация"
     //const { id, preview, cost, brand, name, sizes } = data;
-
     //или старый метод
     /* const id = data.id;
     const preview = data.preview;
@@ -173,12 +175,74 @@ try {
   //динамическое обновление карточек при изменение хеша без перезагрузки страницы
   window.addEventListener('hashchange', () => {
     hash = location.hash.substring(1);
-    getGoods(renderGoodsList, hash);
+    getGoods(renderGoodsList, 'category', hash);
+    changeTitle();
   })
 
-  getGoods(renderGoodsList, hash);
-
+  changeTitle();
+  getGoods(renderGoodsList, 'category', hash);
 
 } catch (err) {
+  console.warn(err)
+}
+//страница товара
+try {
+  if (!document.querySelector('.card-good')) {
+    throw 'This is not a card-good page';
+  }
+  const CardGoodImage = document.querySelector('.card-good__image');
+  const CardGoodBrand = document.querySelector('.card-good__brand');
+  const CardGoodTitle = document.querySelector('.card-good__title');
+  const CardGoodPrice = document.querySelector('.card-good__price');
+  const CardGoodColor = document.querySelector('.card-good__color');
+  const cardGoodSelectWrapper = document.querySelectorAll('.card-good__select__wrapper');
+  const CardGoodColorList = document.querySelector('.card-good__color-list');
+  const CardGoodSize = document.querySelector('.card-good__sizes');
+  const CardGoodSizeList = document.querySelector('.card-good__sizes-list');
+  const CardGoodBuy = document.querySelector('.card-good__buy');
 
+  const generateList = data => data.reduce((html, item, i) => html +
+    `<li class="card-good__select-item" data-id="${i}">${item}</li>`, '');
+
+  const renderCardGood = ([{ brand, name, cost, color, sizes, photo }]) => {
+    CardGoodImage.src = `goods-image/${photo}`;
+    CardGoodImage.alt = `${brand} ${name}`;
+    CardGoodBrand.textContent = brand;
+    CardGoodTitle.textContent = name;
+    CardGoodPrice.textContent = `${cost} ₽`;
+    if (color) {
+      CardGoodColor.textContent = color[0];
+      CardGoodColor.dataset.id = 0;
+      CardGoodColorList.innerHTML = generateList(color);
+    } else {
+      CardGoodColor.style.display = 'none';
+    }
+    if (sizes) {
+      CardGoodSize.textContent = sizes[0];
+      CardGoodSize.dataset.id = 0;
+      CardGoodSizeList.innerHTML = generateList(sizes);
+    } else {
+      CardGoodSize.style.display = 'none';
+    }
+  };
+
+  cardGoodSelectWrapper.forEach(item => {
+    item.addEventListener('click', eve => {
+      const target = eve.target;
+      if (target.closest('.card-good__select')) {
+        target.classList.toggle('card-good__select__open');
+      }
+      if (target.closest('.card-good__select-item')) {
+        const cardGoodSelect = item.querySelector('.card-good__select');
+        cardGoodSelect.textContent = target.textContent;
+        cardGoodSelect.dataset.id = target.dataset.id;
+        cardGoodSelect.classList.remove('card-good__select__open');
+      }
+    });
+  });
+
+  getGoods(renderCardGood, 'id', hash)
+
+} catch (err) {
+  console.warn(err);
 }
