@@ -87,7 +87,6 @@ const enableScroll = () => {
   })
 };
 
-
 //Модальное окно
 const subheaderCart = document.querySelector('.subheader__cart');
 const cartOverlay = document.querySelector('.cart-overlay');
@@ -153,10 +152,6 @@ const getGoods = (callback, prop, value) => {
 /* getGoods((data) => {
   console.warn(data)
 }) */
-
-
-
-
 
 // try/catch данная структура позоволяет работать скрипту на определенных страницах. Работает по принципу обнаружения уникального элемента на странице
 //страница товаров (категорий)
